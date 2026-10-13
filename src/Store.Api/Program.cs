@@ -1,23 +1,38 @@
+using Scalar.AspNetCore;
+using Store.Api.ErrorHandling;
+using Store.Infrastructure;
+using Store.Infrastructure.Persistence;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<DomainExceptionHandler>();
+builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<StoreDbContext>("database");
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+if (app.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
+{
+    await app.Services.ApplyMigrationsAsync();
+}
+
+app.UseExceptionHandler();
+app.UseStatusCodePages();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
+app.MapHealthChecks("/health");
 app.MapControllers();
 
-app.Run();
+await app.RunAsync();
+
+/// <summary>Entry point, exposed so integration tests can use WebApplicationFactory.</summary>
+public partial class Program;
