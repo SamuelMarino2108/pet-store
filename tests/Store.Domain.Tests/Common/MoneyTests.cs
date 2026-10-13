@@ -1,3 +1,4 @@
+using System.Globalization;
 using Store.Domain.Common;
 
 namespace Store.Domain.Tests.Common;
@@ -18,6 +19,12 @@ public class MoneyTests
 
         Assert.Equal(10.25m, money.Amount);
         Assert.Equal(Currency.Usd, money.Currency);
+    }
+
+    [Fact]
+    public void Of_trims_scale_beyond_the_currency_decimal_places()
+    {
+        Assert.Equal("16900", Money.Cop(16_900.00m).Amount.ToString(CultureInfo.InvariantCulture));
     }
 
     [Fact]

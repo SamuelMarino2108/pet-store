@@ -9,7 +9,9 @@ public sealed record Money
 {
     private Money(decimal amount, Currency currency)
     {
-        Amount = amount;
+        // Callers guarantee the value fits the currency; rounding only trims extra scale, so
+        // 16900.00m read from a numeric(18,2) column becomes 16900m like any other COP amount.
+        Amount = decimal.Round(amount, currency.DecimalPlaces);
         Currency = currency;
     }
 
