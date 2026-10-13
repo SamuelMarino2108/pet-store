@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Store.Domain.Common;
 
 namespace Store.Domain.Catalog;
 
@@ -8,6 +9,15 @@ namespace Store.Domain.Catalog;
 /// </summary>
 internal static class SlugGenerator
 {
+    /// <summary>Builds the slug of an entity name and rejects names that produce an empty slug.</summary>
+    public static string FromName(string name, string owner)
+    {
+        var slug = From(name);
+        return slug.Length > 0
+            ? slug
+            : throw new DomainException($"{owner} name must contain at least one letter or digit.");
+    }
+
     public static string From(string text)
     {
         var decomposed = text.Normalize(NormalizationForm.FormD);
