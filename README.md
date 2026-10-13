@@ -36,7 +36,7 @@ flowchart LR
 | Layer | Contents |
 | --- | --- |
 | `Store.Domain` | `Product`, `Category`, `Money`, `Sku`. Rules are enforced here and invalid states throw `DomainException`. |
-| `Store.Application` | Use cases and the ports the infrastructure implements (`IPaymentGateway`, `ISupplierGateway`). |
+| `Store.Application` | Use cases and the ports the infrastructure implements. Empty for now: the first use cases arrive in phase 2, and ports such as `IPaymentGateway` and `ISupplierGateway` in later phases. |
 | `Store.Infrastructure` | `StoreDbContext`, EF Core mappings and migrations. |
 | `Store.Api` | HTTP endpoints, `ProblemDetails` error handling, `/health`, OpenAPI. |
 
