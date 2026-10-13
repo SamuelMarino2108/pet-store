@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Npgsql;
 using Testcontainers.PostgreSql;
 
 [assembly: AssemblyFixture(typeof(Store.Api.Tests.Infrastructure.StoreApiFactory))]
@@ -14,7 +15,20 @@ public sealed class StoreApiFactory : WebApplicationFactory<Program>, IAsyncLife
 {
     private readonly PostgreSqlContainer _database = new PostgreSqlBuilder("postgres:17-alpine").Build();
 
-    public async ValueTask InitializeAsync() => await _database.StartAsync();
+    public async ValueTask InitializeAsync()
+    {
+        await _database.StartAsync();
+
+        // Start the host once, before tests run in parallel, so migrations are applied a single time.
+        _ = Services;
+    }
+
+    /// <summary>Connection string to a new, empty database on the same server, for tests that need isolation.</summary>
+    public string ConnectionStringForNewDatabase() =>
+        new NpgsqlConnectionStringBuilder(_database.GetConnectionString())
+        {
+            Database = $"test_{Guid.NewGuid():N}",
+        }.ConnectionString;
 
     public override async ValueTask DisposeAsync()
     {

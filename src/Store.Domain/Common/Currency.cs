@@ -24,6 +24,8 @@ public sealed record Currency
 
     public int DecimalPlaces { get; }
 
+    public static IReadOnlyCollection<Currency> All => Supported.Values;
+
     public static Currency FromCode(string code) =>
         Supported.TryGetValue(code?.Trim() ?? string.Empty, out var currency)
             ? currency
