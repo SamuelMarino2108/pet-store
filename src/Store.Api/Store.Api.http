@@ -1,5 +1,25 @@
 @Store.Api_HostAddress = http://localhost:5098
 
+GET {{Store.Api_HostAddress}}/api/categories
+Accept: application/json
+
+###
+
+GET {{Store.Api_HostAddress}}/api/products?category=juguetes&sort=PriceAsc&page=1&pageSize=12
+Accept: application/json
+
+###
+
+GET {{Store.Api_HostAddress}}/api/products?search=gato&inStockOnly=true&maxPrice=50000
+Accept: application/json
+
+###
+
+GET {{Store.Api_HostAddress}}/api/products/torre-rascadora-de-120-cm
+Accept: application/json
+
+###
+
 GET {{Store.Api_HostAddress}}/openapi/v1.json
 Accept: application/json
 
