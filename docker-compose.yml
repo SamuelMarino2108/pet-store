@@ -1,0 +1,35 @@
+name: pet-store
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-petstore}
+      POSTGRES_USER: ${POSTGRES_USER:-petstore}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-petstore}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: src/Store.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Store: Host=db;Port=5432;Database=${POSTGRES_DB:-petstore};Username=${POSTGRES_USER:-petstore};Password=${POSTGRES_PASSWORD:-petstore}
+      Database__ApplyMigrationsOnStartup: "true"
+    ports:
+      - "${API_PORT:-8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db-data:
