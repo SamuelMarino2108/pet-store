@@ -14,6 +14,8 @@ public class ProductTests
 
         Assert.Equal("DOG-BED-M", product.Sku.Value);
         Assert.Equal("Cama acolchada mediana", product.Name);
+        Assert.Equal("cama-acolchada-mediana", product.Slug);
+        Assert.Equal("/images/products/cama-acolchada-mediana.webp", product.ImageUrl);
         Assert.Equal(CategoryId, product.CategoryId);
         Assert.Equal(Money.Cop(20_000), product.Cost);
         Assert.Equal(Money.Cop(45_000), product.Price);
@@ -121,6 +123,7 @@ public class ProductTests
             Sku.Create("DOG-BED-M"),
             "Cama",
             string.Empty,
+            "/images/products/cama.webp",
             Guid.Empty,
             Money.Cop(10_000),
             Money.Cop(20_000),
@@ -153,15 +156,58 @@ public class ProductTests
         Assert.Equal("Cama acolchada mediana", product.Name);
     }
 
+    [Fact]
+    public void UpdateDetails_rebuilds_slug_from_new_name()
+    {
+        var product = CreateProduct();
+
+        product.UpdateDetails("Cama Ortopédica Grande", "Nueva", CategoryId);
+
+        Assert.Equal("cama-ortopedica-grande", product.Slug);
+    }
+
+    [Theory]
+    [InlineData("/images/products/cama.webp")]
+    [InlineData("https://cdn.example.com/cama.webp")]
+    public void Create_accepts_site_paths_and_web_urls_as_image(string imageUrl)
+    {
+        var product = CreateProduct(imageUrl: imageUrl);
+
+        Assert.Equal(imageUrl, product.ImageUrl);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("images/cama.webp")]
+    [InlineData("//evil.example.com/cama.webp")]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("ftp://example.com/cama.webp")]
+    public void Create_rejects_invalid_image_urls(string imageUrl)
+    {
+        Assert.Throws<DomainException>(() => CreateProduct(imageUrl: imageUrl));
+    }
+
+    [Fact]
+    public void ChangeImage_replaces_image()
+    {
+        var product = CreateProduct();
+
+        product.ChangeImage("/images/products/otra.webp");
+
+        Assert.Equal("/images/products/otra.webp", product.ImageUrl);
+    }
+
     private static Product CreateProduct(
         decimal cost = 20_000,
         decimal price = 45_000,
         int stock = 10,
-        string name = "Cama acolchada mediana") =>
+        string name = "Cama acolchada mediana",
+        string imageUrl = "/images/products/cama-acolchada-mediana.webp") =>
         Product.Create(
             Sku.Create("dog-bed-m"),
             name,
             "Cama lavable para perros de 10 a 20 kg.",
+            imageUrl,
             CategoryId,
             Money.Cop(cost),
             Money.Cop(price),

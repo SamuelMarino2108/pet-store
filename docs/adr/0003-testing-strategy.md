@@ -13,7 +13,7 @@ Business rules live in the domain and must be tested quickly and in isolation. P
 - **Plain `Assert`** from xUnit. FluentAssertions now has a commercial license, and plain asserts are enough here.
 - **`Store.Domain.Tests`:** unit tests, no I/O. One test class per domain type.
 - **`Store.Api.Tests`:** integration tests with `WebApplicationFactory` and **Testcontainers** (`postgres:17-alpine`). An assembly fixture starts one container for the whole run and applies migrations on startup. Tests create their own data with unique names, so they do not depend on each other.
-- `Store.Application.Tests` will be added with the first use case.
+- **`Store.Application.Tests`:** unit tests for validators and use cases, with hand-written fakes for the ports (no mocking library).
 - CI runs every test on each push and pull request. GitHub runners have Docker available.
 
 ## Consequences

@@ -21,6 +21,7 @@ namespace Store.Infrastructure.Persistence.Migrations
                 .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Store.Domain.Catalog.Category", b =>
@@ -72,6 +73,19 @@ namespace Store.Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric(5,2)")
                         .HasColumnName("discount_percentage");
 
+                    b.Property<decimal>("FinalPriceAmount")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("final_price_amount")
+                        .HasComputedColumnSql("round(price_amount * (100 - coalesce(discount_percentage, 0)) / 100, CASE price_currency WHEN 'COP' THEN 0 WHEN 'USD' THEN 2 END)", true);
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("image_url");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -83,6 +97,12 @@ namespace Store.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("sku");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("slug");
 
                     b.Property<int>("Stock")
                         .HasColumnType("integer")
@@ -140,12 +160,22 @@ namespace Store.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_products");
 
-                    b.HasIndex("CategoryId")
-                        .HasDatabaseName("ix_products_category_id");
+                    b.HasIndex("Name")
+                        .HasDatabaseName("ix_products_name");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Name"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Name"), new[] { "gin_trgm_ops" });
 
                     b.HasIndex("Sku")
                         .IsUnique()
                         .HasDatabaseName("ix_products_sku");
+
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasDatabaseName("ix_products_slug");
+
+                    b.HasIndex("CategoryId", "FinalPriceAmount")
+                        .HasDatabaseName("ix_products_category_id_final_price_amount");
 
                     b.ToTable("products", (string)null);
                 });

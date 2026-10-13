@@ -11,6 +11,7 @@ public sealed class StoreDbContext(DbContextOptions<StoreDbContext> options) : D
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.HasPostgresExtension("pg_trgm");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(StoreDbContext).Assembly);
     }
 }

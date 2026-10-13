@@ -23,21 +23,13 @@ public sealed class Category : Entity
     public static Category Create(string name)
     {
         var validName = Guard.NotEmpty(name, nameof(name), NameMaxLength);
-        return new Category(validName, BuildSlug(validName));
+        return new Category(validName, SlugGenerator.FromName(validName, nameof(Category)));
     }
 
     public void Rename(string name)
     {
         var validName = Guard.NotEmpty(name, nameof(name), NameMaxLength);
-        Slug = BuildSlug(validName);
+        Slug = SlugGenerator.FromName(validName, nameof(Category));
         Name = validName;
-    }
-
-    private static string BuildSlug(string name)
-    {
-        var slug = SlugGenerator.From(name);
-        return slug.Length > 0
-            ? slug
-            : throw new DomainException("Category name must contain at least one letter or digit.");
     }
 }

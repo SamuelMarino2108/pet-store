@@ -35,16 +35,17 @@ flowchart LR
 
 | Layer | Contents |
 | --- | --- |
-| `Store.Domain` | `Product`, `Category`, `Money`, `Sku`. Rules are enforced here and invalid states throw `DomainException`. |
-| `Store.Application` | Use cases and the ports the infrastructure implements. Empty for now: the first use cases arrive in phase 2, and ports such as `IPaymentGateway` and `ISupplierGateway` in later phases. |
-| `Store.Infrastructure` | `StoreDbContext`, EF Core mappings and migrations. |
-| `Store.Api` | HTTP endpoints, `ProblemDetails` error handling, `/health`, OpenAPI. |
+| `Store.Domain` | `Product`, `Category`, `Money`, `Sku`, `SupplierReference`. Rules are enforced here and invalid states throw `DomainException`. |
+| `Store.Application` | Use cases (`ICatalogService`), DTOs, FluentValidation validators and the ports the infrastructure implements (`ICatalogQueries`; payment and supplier ports arrive in later phases). |
+| `Store.Infrastructure` | `StoreDbContext`, EF Core mappings, migrations, catalog queries and the sample data seed. |
+| `Store.Api` | Thin controllers, `ProblemDetails` error handling, Serilog request logging, `/health`, OpenAPI. |
 
 ## Tech stack
 
 - **Backend:** .NET 10, ASP.NET Core, EF Core 10, PostgreSQL 17
 - **Frontend:** React, TypeScript, Vite, Tailwind, TanStack Query *(phase 2)*
 - **Tests:** xUnit v3, Testcontainers
+- **Logging:** Serilog
 - **Infra:** Docker Compose, GitHub Actions
 - **Payments:** Wompi sandbox *(phase 4)*
 
@@ -66,7 +67,17 @@ docker compose up --build
 - Health check: http://localhost:8080/health
 - API reference (Scalar): http://localhost:8080/scalar
 
-Migrations are applied when the API starts.
+Migrations are applied when the API starts, and in development an empty database is filled with a sample catalog (6 categories, 30 products).
+
+### Catalog API
+
+| Endpoint | Description |
+| --- | --- |
+| `GET /api/categories` | Categories with their product count. |
+| `GET /api/products` | Search with `category`, `search`, `minPrice`, `maxPrice`, `inStockOnly`, `sort` (`Newest`, `PriceAsc`, `PriceDesc`, `NameAsc`), `page` and `pageSize` (max 48). Prices filter by final price. |
+| `GET /api/products/{slug}` | Product detail. |
+
+Invalid filters return `400` with `ValidationProblemDetails`, and an unknown product returns `404`. Cost and margin are never part of the public API. Sample requests are in [`src/Store.Api/Store.Api.http`](src/Store.Api/Store.Api.http).
 
 ### Run the API from the IDE or the CLI
 
@@ -83,7 +94,7 @@ The development connection string in `appsettings.Development.json` points to th
 dotnet test
 ```
 
-Domain tests run without dependencies. API tests start a PostgreSQL container, so Docker must be running.
+Domain and application tests run without dependencies. API tests start a PostgreSQL container, so Docker must be running.
 
 ### Database migrations
 
@@ -109,6 +120,7 @@ Each important decision is recorded as an ADR:
 - [0001 - Supplier integration behind `ISupplierGateway`](docs/adr/0001-supplier-integration.md)
 - [0002 - Persistence with EF Core and PostgreSQL](docs/adr/0002-persistence-with-ef-core-and-postgresql.md)
 - [0003 - Testing strategy](docs/adr/0003-testing-strategy.md)
+- [0004 - Catalog read model](docs/adr/0004-catalog-read-model.md)
 
 ## Roadmap
 

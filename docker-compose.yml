@@ -25,6 +25,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__Store: Host=db;Port=5432;Database=${POSTGRES_DB:-petstore};Username=${POSTGRES_USER:-petstore};Password=${POSTGRES_PASSWORD:-petstore}
       Database__ApplyMigrationsOnStartup: "true"
+      Database__SeedSampleData: "true"
     ports:
       - "${API_PORT:-8080}:8080"
     depends_on:

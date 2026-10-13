@@ -10,6 +10,7 @@ public sealed class Product : Entity
 {
     public const int NameMaxLength = 200;
     public const int DescriptionMaxLength = 4000;
+    public const int ImageUrlMaxLength = 500;
     public const int DiscountDecimalPlaces = 2;
 
     // Required by EF Core to materialize the entity.
@@ -17,7 +18,9 @@ public sealed class Product : Entity
     {
         Sku = null!;
         Name = null!;
+        Slug = null!;
         Description = null!;
+        ImageUrl = null!;
         Cost = null!;
         Price = null!;
         Supplier = null!;
@@ -27,6 +30,7 @@ public sealed class Product : Entity
         Sku sku,
         string name,
         string description,
+        string imageUrl,
         Guid categoryId,
         Money cost,
         Money price,
@@ -35,7 +39,9 @@ public sealed class Product : Entity
     {
         Sku = sku;
         Name = name;
+        Slug = SlugGenerator.FromName(name, nameof(Product));
         Description = description;
+        ImageUrl = imageUrl;
         CategoryId = categoryId;
         Cost = cost;
         Price = price;
@@ -47,7 +53,13 @@ public sealed class Product : Entity
 
     public string Name { get; private set; }
 
+    /// <summary>URL-friendly identifier derived from the name, unique across products.</summary>
+    public string Slug { get; private set; }
+
     public string Description { get; private set; }
+
+    /// <summary>Main image: an absolute http(s) URL or a path relative to the site root.</summary>
+    public string ImageUrl { get; private set; }
 
     /// <summary>Categories are a separate aggregate, so they are referenced by id.</summary>
     public Guid CategoryId { get; private set; }
@@ -77,6 +89,7 @@ public sealed class Product : Entity
         Sku sku,
         string name,
         string description,
+        string imageUrl,
         Guid categoryId,
         Money cost,
         Money price,
@@ -93,6 +106,7 @@ public sealed class Product : Entity
             sku,
             Guard.NotEmpty(name, nameof(name), NameMaxLength),
             NormalizeDescription(description),
+            ValidateImageUrl(imageUrl),
             categoryId,
             cost,
             price,
@@ -105,11 +119,15 @@ public sealed class Product : Entity
         EnsureValidCategory(categoryId);
         var validName = Guard.NotEmpty(name, nameof(name), NameMaxLength);
         var validDescription = NormalizeDescription(description);
+        var slug = SlugGenerator.FromName(validName, nameof(Product));
 
         Name = validName;
+        Slug = slug;
         Description = validDescription;
         CategoryId = categoryId;
     }
+
+    public void ChangeImage(string imageUrl) => ImageUrl = ValidateImageUrl(imageUrl);
 
     public void UpdatePricing(Money cost, Money price)
     {
@@ -178,6 +196,18 @@ public sealed class Product : Entity
         {
             throw new DomainException("Stock cannot be negative.");
         }
+    }
+
+    private static string ValidateImageUrl(string imageUrl)
+    {
+        var url = Guard.NotEmpty(imageUrl, nameof(imageUrl), ImageUrlMaxLength);
+        var isSitePath = url.StartsWith('/') && !url.StartsWith("//", StringComparison.Ordinal);
+        var isWebUrl = Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp);
+
+        return isSitePath || isWebUrl
+            ? url
+            : throw new DomainException("Image URL must be an http(s) URL or a path starting with '/'.");
     }
 
     private static string NormalizeDescription(string? description)

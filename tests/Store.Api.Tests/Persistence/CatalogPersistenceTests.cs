@@ -19,6 +19,7 @@ public class CatalogPersistenceTests(StoreApiFactory factory)
             Sku.Create($"BED-{Guid.NewGuid():N}"[..20]),
             "Cama acolchada mediana",
             "Cama lavable para perros de 10 a 20 kg.",
+            "/images/products/cama.webp",
             category.Id,
             Money.Cop(20_000),
             Money.Cop(45_000),
@@ -47,6 +48,45 @@ public class CatalogPersistenceTests(StoreApiFactory factory)
             Assert.Equal(8, loaded.Stock);
             Assert.Equal(SupplierReference.Create("simulated", "SIM-0001"), loaded.Supplier);
         }
+    }
+
+    [Theory]
+    [InlineData(45_001, null, 45_001)]
+    [InlineData(45_001, 12.5, 39_376)]
+    [InlineData(84_900, 33.33, 56_603)]
+    public async Task Generated_final_price_column_matches_domain_rounding(
+        decimal price,
+        double? discount,
+        decimal expectedFinalPrice)
+    {
+        var category = Category.Create($"Precios {Guid.NewGuid():N}");
+        var product = Product.Create(
+            Sku.Create($"PRC-{Guid.NewGuid():N}"[..20]),
+            $"Producto {Guid.NewGuid():N}",
+            string.Empty,
+            "/images/products/test.webp",
+            category.Id,
+            Money.Cop(10_000),
+            Money.Cop(price),
+            stock: 1,
+            SupplierReference.Create("simulated", "SIM-PRC"));
+        if (discount is { } percentage)
+        {
+            product.ApplyDiscount((decimal)percentage);
+        }
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<StoreDbContext>();
+        dbContext.AddRange(category, product);
+        await dbContext.SaveChangesAsync(_cancellationToken);
+
+        var storedFinalPrice = await dbContext.Products
+            .Where(p => p.Id == product.Id)
+            .Select(p => EF.Property<decimal>(p, "FinalPriceAmount"))
+            .SingleAsync(_cancellationToken);
+
+        Assert.Equal(expectedFinalPrice, product.FinalPrice.Amount);
+        Assert.Equal(product.FinalPrice.Amount, storedFinalPrice);
     }
 
     [Fact]
