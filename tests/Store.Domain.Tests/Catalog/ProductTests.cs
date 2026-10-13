@@ -65,6 +65,24 @@ public class ProductTests
     }
 
     [Fact]
+    public void ApplyDiscount_accepts_two_decimal_places()
+    {
+        var product = CreateProduct();
+
+        product.ApplyDiscount(12.75m);
+
+        Assert.Equal(12.75m, product.DiscountPercentage);
+    }
+
+    [Fact]
+    public void ApplyDiscount_rejects_more_than_two_decimal_places()
+    {
+        var product = CreateProduct();
+
+        Assert.Throws<DomainException>(() => product.ApplyDiscount(12.345m));
+    }
+
+    [Fact]
     public void Gross_margin_can_be_negative_when_selling_below_cost()
     {
         var product = CreateProduct(cost: 30_000, price: 25_000);

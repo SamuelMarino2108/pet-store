@@ -18,7 +18,7 @@ internal sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
 
         builder.Property(p => p.Name).HasMaxLength(Product.NameMaxLength);
         builder.Property(p => p.Description).HasMaxLength(Product.DescriptionMaxLength);
-        builder.Property(p => p.DiscountPercentage).HasPrecision(5, 2);
+        builder.Property(p => p.DiscountPercentage).HasPrecision(5, Product.DiscountDecimalPlaces);
 
         builder.ComplexProperty(p => p.Cost, MoneyMapping.Configure);
         builder.ComplexProperty(p => p.Price, MoneyMapping.Configure);

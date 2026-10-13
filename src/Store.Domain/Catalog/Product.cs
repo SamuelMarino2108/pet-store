@@ -10,6 +10,7 @@ public sealed class Product : Entity
 {
     public const int NameMaxLength = 200;
     public const int DescriptionMaxLength = 4000;
+    public const int DiscountDecimalPlaces = 2;
 
     // Required by EF Core to materialize the entity.
     private Product()
@@ -123,6 +124,12 @@ public sealed class Product : Entity
         if (percentage is <= 0 or >= 100)
         {
             throw new DomainException("Discount percentage must be greater than 0 and less than 100.");
+        }
+
+        if (decimal.Round(percentage, DiscountDecimalPlaces) != percentage)
+        {
+            throw new DomainException(
+                $"Discount percentage allows at most {DiscountDecimalPlaces} decimal places.");
         }
 
         DiscountPercentage = percentage;
