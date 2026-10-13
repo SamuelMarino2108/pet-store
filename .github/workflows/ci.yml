@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend build and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore -c Release
+
+      # Integration tests start PostgreSQL with Testcontainers; Docker is available on the runner.
+      - name: Test
+        run: dotnet test --no-build --configuration Release
+
+      - name: Check for model changes without a migration
+        run: |
+          dotnet tool restore
+          dotnet ef migrations has-pending-model-changes \
+            -p src/Store.Infrastructure -s src/Store.Api --no-build --configuration Release
+        env:
+          ConnectionStrings__Store: Host=localhost;Database=unused
+
+  docker:
+    name: API image build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -f src/Store.Api/Dockerfile .
